@@ -1,0 +1,43 @@
+# Parâmetros do ArduPlane para o drone solar dos bombeiros
+# Carregar no Mission Planner: CONFIG > Lista completa de parâmetros > Carregar do arquivo
+# Depois clique em "Gravar parâmetros" e reinicie a controladora.
+#
+# ATENÇÃO: confira cada valor antes de voar. Isto é um ponto de partida,
+# não substitui a calibração (acelerômetro, bússola, rádio, servos).
+
+# --- Porta serial do ESP32 ---
+# Troque o "2" pelo número da UART da sua controladora onde ligou o ESP32
+# (veja a tabela "UART Mapping" da sua placa em ardupilot.org)
+SERIAL2_PROTOCOL,2
+SERIAL2_BAUD,115
+
+# --- LiDAR chegando pelo ESP32 (MAVLink) ---
+RNGFND1_TYPE,10
+# 25 = apontado para baixo (use 0 se montar para frente)
+RNGFND1_ORIENT,25
+# ArduPilot 4.6 ou mais novo (metros). TF-Luna: 0.2 a 8
+RNGFND1_MIN,0.2
+RNGFND1_MAX,8
+# ArduPilot 4.5 ou mais antigo (centímetros) — ignorado nas versões novas
+RNGFND1_MIN_CM,20
+RNGFND1_MAX_CM,800
+# Usa o LiDAR para medir a altura no pouso automático
+RNGFND_LANDING,1
+
+# --- Perda do sinal do rádio controle: volta para casa ---
+THR_FAILSAFE,1
+FS_SHORT_ACTN,0
+FS_LONG_ACTN,1
+FS_LONG_TIMEOUT,5
+
+# --- Bateria Li-ion 2S3P (Molicel P42A) ---
+BATT_CAPACITY,12600
+# 3,4 V por célula: volta para casa
+BATT_LOW_VOLT,6.8
+# 3,2 V por célula: volta para casa (o mais rápido possível)
+BATT_CRT_VOLT,6.4
+BATT_FS_LOW_ACT,1
+BATT_FS_CRT_ACT,1
+
+# --- Altura de retorno para casa: 80 m (limite legal no Brasil: 120 m) ---
+RTL_ALTITUDE,80

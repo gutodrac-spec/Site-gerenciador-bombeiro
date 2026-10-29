@@ -1,9 +1,22 @@
 # Drone solar — ESP32 + GoPro HERO7 Black
 
-Primeira etapa: o ESP32 controlando a GoPro pelo Wi-Fi. Dá para testar
-tudo em cima da mesa, antes de ter o avião.
+| Pasta / arquivo | O que é |
+|---|---|
+| [`GUIA-MONTAGEM.md`](GUIA-MONTAGEM.md) | **Comece aqui:** lista de compras, ligações e montagem |
+| `esp32-gopro/` | Teste de bancada: ESP32 controlando a GoPro (abaixo) |
+| `aviao-esp32/` | Código do ESP32 de bordo: LiDAR, MAVLink, solar, GoPro e LoRa. Configure no `config.h` |
+| `base-lora/` | Estação base: recebe a telemetria e mostra o painel no celular |
+| `ardupilot/drone-solar.param` | Parâmetros para a controladora de voo (ArduPlane) |
 
-## 1. Preparar a GoPro
+Os códigos `aviao-esp32` e `base-lora` precisam da biblioteca **LoRa**,
+de Sandeep Mistry. Instale pelo Gerenciador de Bibliotecas da Arduino IDE.
+
+## Teste de bancada: ESP32 + GoPro
+
+O ESP32 controlando a GoPro pelo Wi-Fi. Dá para testar tudo em cima da
+mesa, antes de ter o avião.
+
+### 1. Preparar a GoPro
 
 1. Atualize a GoPro para o firmware mais recente (pelo app GoPro Quik).
 2. Na câmera: **Preferências > Conexões > Conexões sem fio = Ligado**.
@@ -13,7 +26,7 @@ tudo em cima da mesa, antes de ter o avião.
 > Se a GoPro nunca foi pareada com um celular, pareie uma vez com o app
 > Quik. Isso ativa a rede Wi-Fi dela.
 
-## 2. Preparar a Arduino IDE
+### 2. Preparar a Arduino IDE
 
 1. Instale a [Arduino IDE](https://www.arduino.cc/en/software).
 2. Em **Arquivo > Preferências > URLs adicionais**, cole:
@@ -22,7 +35,7 @@ tudo em cima da mesa, antes de ter o avião.
    (da Espressif).
 4. Escolha a placa **ESP32 Dev Module** (ou o modelo da sua placa).
 
-## 3. Gravar o código
+### 3. Gravar o código
 
 1. Abra `esp32-gopro/esp32-gopro.ino`.
 2. No topo do arquivo, troque `GOPRO_SSID` e `GOPRO_SENHA` pelos dados da
@@ -30,7 +43,7 @@ tudo em cima da mesa, antes de ter o avião.
 3. Ligue o ESP32 no USB e clique em **Carregar**.
 4. Abra o **Monitor Serial** em **115200**.
 
-## 4. Usar
+### 4. Usar
 
 | Ação | Como |
 |---|---|
@@ -43,7 +56,7 @@ O LED azul da placa acende enquanto a GoPro está gravando.
 Para o drone, mude `GRAVAR_AO_CONECTAR` para `true`: assim que o ESP32
 achar a GoPro, ela começa a gravar sozinha.
 
-## Problemas comuns
+### Problemas comuns
 
 - **"falhou. A GoPro está com o Wi-Fi ligado?"**: a GoPro desliga o Wi-Fi
   depois de um tempo parada. Ligue de novo pelo menu de Conexões.
@@ -53,7 +66,7 @@ achar a GoPro, ela começa a gravar sozinha.
 
 ## Próximas etapas
 
-- [ ] Ligar o sensor ao ESP32 e mandar a leitura junto com o status
-- [ ] Telemetria por rádio LoRa até a base
-- [ ] Ligar o ESP32 na controladora de voo (MAVLink)
+- [x] LiDAR no ESP32, repassado para o ArduPilot
+- [x] Telemetria por rádio LoRa até a base
+- [x] ESP32 ligado na controladora de voo (MAVLink)
 - [ ] Painel no site mostrando o drone no mapa
