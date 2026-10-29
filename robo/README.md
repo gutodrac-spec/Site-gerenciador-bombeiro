@@ -8,8 +8,9 @@ Arduino Mega pela USB.
 ```
 Você (texto no PC)
       ↓
-robo_claude.py  ←→  API do Claude (ferramentas: mover, virar, medir_distancia, luz)
-      ↓ USB serial, 115200
+Webcam do PC ──→ robo_claude.py  ←→  API do Claude
+                      │              (ferramentas: mover, virar, medir_distancia, luz, olhar_camera)
+                      ↓ USB serial, 115200
 Arduino Mega → relés (motor/luz), servo (direção), HC-SR04 (distância)
 ```
 
@@ -24,6 +25,7 @@ Arduino Mega → relés (motor/luz), servo (direção), HC-SR04 (distância)
 | HC-SR04 | distância à frente |
 | Bateria + regulador step-down 5 V | motor e servo |
 | Capacitor cerâmico 100 nF ("104") | nos terminais do motor, contra ruído |
+| Webcam USB (ou a do notebook) | fase 1.1: visão |
 | ESP32 | fase 2: comunicação Wi-Fi |
 
 ## Ligações
@@ -96,6 +98,39 @@ Exemplos para falar com o robô:
 - "faça uma curva para a esquerda"
 - "dê ré, vire as rodas e manobre para desviar da parede"
 
+## Fase 1.1: webcam
+
+O Claude ganha a ferramenta `olhar_camera`: o script tira uma foto com a webcam do PC
+e envia a imagem, junto com a distância do sensor, para o Claude analisar.
+
+**Onde colocar a câmera**
+- **Webcam USB em cima do robô** (recomendado): o robô "enxerga" o caminho. Prenda-a no
+  suporte frontal impresso em 3D e use um cabo USB comprido (ou um hub junto com o do Arduino).
+- **Webcam do notebook / fixa**: filma o robô de fora. Diga isso ao Claude
+  ("a câmera está parada filmando o robô de cima").
+
+**Uso**
+```bash
+python robo_claude.py --testar-camera          # salva foto_teste.jpg para conferir
+python robo_claude.py --porta COM3             # usa a webcam 0 automaticamente
+python robo_claude.py --porta COM3 --camera 1  # outra webcam (ex.: a USB, se o notebook já tem uma)
+python robo_claude.py --porta COM3 --sem-camera
+python robo_claude.py --simular                # testa visão + Claude sem o Arduino
+```
+
+- A última foto enviada fica em `ultima_foto.jpg`, para você ver o que o Claude viu.
+- As fotos são reduzidas para 800 px de largura; só as 3 mais recentes ficam no histórico
+  da conversa (as antigas viram texto), para não gastar tokens à toa.
+- Se a webcam não abrir, o script avisa e continua sem câmera.
+- Windows: se a câmera não abrir, confira em Configurações → Privacidade → Câmera se
+  aplicativos da área de trabalho podem usá-la, e feche outros programas que estejam
+  usando a webcam (Teams, Zoom, navegador).
+
+Exemplos:
+- "olhe e me diga o que tem na sua frente"
+- "procure uma garrafa e vá até ela"
+- "vire até ver a porta e pare"
+
 ## Comandos seriais (protocolo)
 
 | Comando | Efeito |
@@ -130,5 +165,5 @@ Sugestão: PLA ou PETG, preenchimento 20–30%, 3 paredes.
 
 ## Próximas fases
 1. **Wi-Fi**: ESP32 ligado ao `Serial1` do Mega (pinos 18/19), com conversor de nível 5 V → 3,3 V no RX do ESP32.
-2. **Visão**: ESP32-CAM ou celular enviando fotos para o Claude.
+2. **Visão sem fio**: ESP32-CAM ou celular no lugar da webcam USB.
 3. **Voz** no PC.

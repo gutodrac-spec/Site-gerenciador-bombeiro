@@ -5,11 +5,15 @@ Uso:
     python robo_claude.py --porta /dev/ttyACM0    # Linux
     python robo_claude.py --porta COM3 --manual   # testa comandos sem o Claude
     python robo_claude.py --simular               # sem Arduino (para testar o Claude)
+    python robo_claude.py --simular --camera 1    # escolhe outra webcam
+    python robo_claude.py --porta COM3 --sem-camera
+    python robo_claude.py --testar-camera         # tira uma foto e salva em foto_teste.jpg
 
 Requer a variável de ambiente ANTHROPIC_API_KEY (exceto no modo --manual).
 """
 
 import argparse
+import base64
 import time
 
 MODELO = "claude-sonnet-5-5"
@@ -21,6 +25,14 @@ A direção só muda o rumo enquanto o robô anda. Para fazer curva: vire, depoi
 Ande em passos curtos (300 a 1000 ms) e confira a distância após cada movimento.
 Se a distância for menor que 30 cm, não vá para frente: dê ré com a direção virada.
 Responda em português, de forma breve."""
+
+SISTEMA_CAMERA = """
+Você também tem uma webcam (ferramenta olhar_camera). Use-a para entender o ambiente:
+antes de se mover quando não souber o que há à frente, para procurar objetos que o
+usuário pedir e para confirmar o resultado de uma manobra. Descreva o que vê só quando
+for útil. O sensor de distância é mais confiável que a imagem para medir distâncias."""
+
+MAX_IMAGENS_NO_HISTORICO = 3
 
 TOOLS = [
     {
@@ -62,6 +74,43 @@ TOOLS = [
 ]
 
 
+TOOL_CAMERA = {
+    "name": "olhar_camera",
+    "description": "Tira uma foto com a webcam e devolve a imagem para você analisar.",
+    "input_schema": {"type": "object", "properties": {}},
+}
+
+
+class Camera:
+    def __init__(self, indice=0, largura=800):
+        import cv2
+
+        self.cv2 = cv2
+        self.largura = largura
+        self.cap = cv2.VideoCapture(indice)
+        if not self.cap.isOpened():
+            raise RuntimeError(f"não consegui abrir a webcam {indice}")
+        for _ in range(5):  # descarta os primeiros quadros (exposição ainda ajustando)
+            self.cap.read()
+
+    def foto_jpeg(self):
+        for _ in range(2):  # esvazia o buffer para pegar um quadro atual
+            self.cap.grab()
+        ok, quadro = self.cap.read()
+        if not ok:
+            raise RuntimeError("falha ao ler a webcam")
+        h, w = quadro.shape[:2]
+        if w > self.largura:
+            quadro = self.cv2.resize(quadro, (self.largura, int(h * self.largura / w)))
+        ok, jpg = self.cv2.imencode(".jpg", quadro, [self.cv2.IMWRITE_JPEG_QUALITY, 80])
+        if not ok:
+            raise RuntimeError("falha ao codificar a imagem")
+        return jpg.tobytes()
+
+    def fechar(self):
+        self.cap.release()
+
+
 class Arduino:
     def __init__(self, porta):
         import serial
@@ -90,7 +139,28 @@ class Simulador:
         return f"OK DIST {self.dist}"
 
 
-def executar(robo, nome, a):
+def executar(robo, camera, nome, a):
+    """Retorna o conteúdo do tool_result: texto ou lista de blocos (imagem)."""
+    if nome == "olhar_camera":
+        if camera is None:
+            return "ERRO câmera desativada"
+        try:
+            jpg = camera.foto_jpeg()
+        except RuntimeError as e:
+            return f"ERRO {e}"
+        with open("ultima_foto.jpg", "wb") as f:  # para você conferir o que o Claude viu
+            f.write(jpg)
+        return [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": base64.b64encode(jpg).decode(),
+                },
+            },
+            {"type": "text", "text": robo.enviar("DIST 0")},
+        ]
     if nome == "mover":
         return robo.enviar(f"{a['direcao']} {int(a['ms'])}")
     if nome == "virar":
@@ -109,10 +179,29 @@ def modo_manual(robo):
             print(robo.enviar(cmd))
 
 
-def modo_claude(robo):
+def podar_imagens(msgs, manter=MAX_IMAGENS_NO_HISTORICO):
+    """Troca fotos antigas por texto, para o histórico não crescer sem limite."""
+    vistas = 0
+    for msg in reversed(msgs):
+        if msg["role"] != "user" or not isinstance(msg["content"], list):
+            continue
+        for bloco in msg["content"]:
+            if bloco.get("type") != "tool_result" or not isinstance(bloco["content"], list):
+                continue
+            if any(c.get("type") == "image" for c in bloco["content"]):
+                vistas += 1
+                if vistas > manter:
+                    bloco["content"] = [
+                        {"type": "text", "text": "[foto antiga removida]"}
+                    ] + [c for c in bloco["content"] if c.get("type") == "text"]
+
+
+def modo_claude(robo, camera):
     import anthropic
 
     client = anthropic.Anthropic()
+    tools = TOOLS + ([TOOL_CAMERA] if camera else [])
+    sistema = SISTEMA + (SISTEMA_CAMERA if camera else "")
     msgs = []
     print("Converse com o robô. 'sair' encerra.")
     while (texto := input("Você: ").strip()) != "sair":
@@ -121,7 +210,7 @@ def modo_claude(robo):
         msgs.append({"role": "user", "content": texto})
         while True:
             r = client.messages.create(
-                model=MODELO, max_tokens=1024, system=SISTEMA, tools=TOOLS, messages=msgs
+                model=MODELO, max_tokens=1024, system=sistema, tools=tools, messages=msgs
             )
             msgs.append({"role": "assistant", "content": r.content})
             if r.stop_reason != "tool_use":
@@ -130,10 +219,12 @@ def modo_claude(robo):
             resultados = []
             for b in r.content:
                 if b.type == "tool_use":
-                    saida = executar(robo, b.name, b.input)
-                    print(f"  {b.name}({b.input}) -> {saida}")
+                    saida = executar(robo, camera, b.name, b.input)
+                    resumo = saida if isinstance(saida, str) else "[foto] " + saida[-1]["text"]
+                    print(f"  {b.name}({b.input}) -> {resumo}")
                     resultados.append({"type": "tool_result", "tool_use_id": b.id, "content": saida})
             msgs.append({"role": "user", "content": resultados})
+            podar_imagens(msgs)
 
 
 def main():
@@ -141,7 +232,18 @@ def main():
     p.add_argument("--porta", help="porta serial do Arduino (ex: COM3, /dev/ttyACM0)")
     p.add_argument("--manual", action="store_true", help="envia comandos digitados direto ao Arduino")
     p.add_argument("--simular", action="store_true", help="roda sem Arduino")
+    p.add_argument("--camera", type=int, default=0, help="índice da webcam (padrão 0)")
+    p.add_argument("--sem-camera", action="store_true", help="não usa a webcam")
+    p.add_argument("--testar-camera", action="store_true", help="salva uma foto em foto_teste.jpg e sai")
     args = p.parse_args()
+
+    if args.testar_camera:
+        cam = Camera(args.camera)
+        with open("foto_teste.jpg", "wb") as f:
+            f.write(cam.foto_jpeg())
+        cam.fechar()
+        print("Foto salva em foto_teste.jpg")
+        return
 
     if args.simular:
         robo = Simulador()
@@ -150,10 +252,27 @@ def main():
     else:
         p.error("informe --porta ou use --simular")
 
+    if args.manual:
+        try:
+            modo_manual(robo)
+        finally:
+            robo.enviar("PARAR 0")
+        return
+
+    camera = None
+    if not args.sem_camera:
+        try:
+            camera = Camera(args.camera)
+            print(f"Webcam {args.camera} ativa (última foto em ultima_foto.jpg).")
+        except (ImportError, RuntimeError) as e:
+            print(f"Aviso: seguindo sem câmera ({e}).")
+
     try:
-        modo_manual(robo) if args.manual else modo_claude(robo)
+        modo_claude(robo, camera)
     finally:
         robo.enviar("PARAR 0")
+        if camera:
+            camera.fechar()
 
 
 if __name__ == "__main__":
