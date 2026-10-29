@@ -48,6 +48,11 @@ térmica e telemetria por rádio LoRa até uma base em terra.
 
 ## 2. Lista de compras
 
+> **Vai imprimir o avião em 3D?** Use a [**lista de compras completa**](LISTA-COMPRAS.md):
+> ela já junta tudo (avião impresso, eletrônica, solar, IA e base) e tira
+> o que você já tem. A lista abaixo é para a versão com avião de espuma
+> comprado pronto.
+
 Preços aproximados em reais, só como referência: confira antes de comprar.
 Os links abrem a **busca** no Mercado Livre (ML) e no AliExpress (Ali),
 porque os anúncios mudam toda hora.

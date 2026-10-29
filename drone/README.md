@@ -2,7 +2,8 @@
 
 | Pasta / arquivo | O que é |
 |---|---|
-| [`GUIA-MONTAGEM.md`](GUIA-MONTAGEM.md) | **Comece aqui:** lista de compras, ligações e montagem |
+| [`LISTA-COMPRAS.md`](LISTA-COMPRAS.md) | **Lista de compras completa** da versão impressa em 3D, com total estimado |
+| [`GUIA-MONTAGEM.md`](GUIA-MONTAGEM.md) | **Comece aqui:** ligações, montagem e testes |
 | `esp32-gopro/` | Teste de bancada: ESP32 controlando a GoPro (abaixo) |
 | `aviao-esp32/` | Código do ESP32 de bordo: LiDAR, MAVLink, solar, GoPro e LoRa. Configure no `config.h` |
 | `base-lora/` | Estação base: recebe a telemetria e mostra o painel no celular |
