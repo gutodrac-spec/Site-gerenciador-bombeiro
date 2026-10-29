@@ -7,9 +7,14 @@
 | `aviao-esp32/` | Código do ESP32 de bordo: LiDAR, MAVLink, solar, GoPro e LoRa. Configure no `config.h` |
 | `base-lora/` | Estação base: recebe a telemetria e mostra o painel no celular |
 | `ardupilot/drone-solar.param` | Parâmetros para a controladora de voo (ArduPlane) |
+| [`modelo-3d/`](modelo-3d/README.md) | **Avião para imprimir em 3D:** peças STL, como imprimir e montar |
 
-Os códigos `aviao-esp32` e `base-lora` precisam da biblioteca **LoRa**,
-de Sandeep Mistry. Instale pelo Gerenciador de Bibliotecas da Arduino IDE.
+O `aviao-esp32` tem também a **IA que procura focos de incêndio** com a
+câmera térmica (`ia_fogo.h`); veja a seção 5 do guia.
+
+Instale pelo Gerenciador de Bibliotecas da Arduino IDE: **LoRa** (Sandeep
+Mistry), usada no `aviao-esp32` e no `base-lora`, e **Adafruit MLX90640**,
+usada no `aviao-esp32`.
 
 ## Teste de bancada: ESP32 + GoPro
 
@@ -69,4 +74,6 @@ achar a GoPro, ela começa a gravar sozinha.
 - [x] LiDAR no ESP32, repassado para o ArduPilot
 - [x] Telemetria por rádio LoRa até a base
 - [x] ESP32 ligado na controladora de voo (MAVLink)
+- [x] IA de bordo procurando focos de incêndio
+- [x] Modelo 3D do avião para imprimir
 - [ ] Painel no site mostrando o drone no mapa

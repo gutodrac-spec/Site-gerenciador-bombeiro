@@ -46,5 +46,19 @@
 #define PINO_I2C_SDA 21
 #define PINO_I2C_SCL 22
 
+// ---------- IA: câmera térmica MLX90640 procurando focos de incêndio ----------
+// Precisa da biblioteca "Adafruit MLX90640". Mesmo barramento I2C do INA226.
+#define USAR_TERMICA true
+#define IA_PODE_CONTROLAR true      // false = só avisa a base, nunca mexe no voo
+#define IA_LIMITE_C 70              // temperatura mínima de um foco
+#define IA_CONTRASTE_C 25           // quanto acima do resto da imagem
+#define IA_ALT_MIN_M 40             // só assume o controle acima disso
+#define IA_BATERIA_MIN_PCT 35
+#define IA_RAIO_M 70                // raio da volta em cima do foco
+#define IA_CIRCULAR_MAX_S 180       // depois disso volta para a missão
+#define IA_ESPERA_S 300             // tempo sem assumir de novo depois de largar
+#define IA_INVERTER_LINHAS false    // ajuste se a imagem sair de cabeça para baixo
+#define IA_INVERTER_COLUNAS false   // ajuste se sair espelhada
+
 // ---------- Outros ----------
 #define PINO_LED 25                 // aceso = GoPro gravando

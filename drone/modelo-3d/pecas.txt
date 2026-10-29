@@ -1,0 +1,25 @@
+Peça                          Qtd  Material  Peso un. (g)  Tamanho (mm)
+asa_segmento_A_raiz.stl         8  LW-PLA            49    220 x 28 x 190
+asa_segmento_B_servo.stl        2  LW-PLA            41    165 x 28 x 190
+asa_segmento_C.stl              2  LW-PLA            40    165 x 28 x 190
+asa_ponta_esquerda.stl          1  LW-PLA            29    220 x 28 x 160
+asa_ponta_direita.stl           1  LW-PLA            29    220 x 28 x 160
+aileron.stl                     4  LW-PLA             8    54 x 13 x 189
+cauda_estabilizador.stl         2  LW-PLA            21    91 x 12 x 240
+cauda_profundor.stl             2  LW-PLA             7    38 x 6 x 239
+cauda_deriva.stl                1  LW-PLA            19    110 x 15 x 220
+cauda_leme.stl                  1  LW-PLA             8    59 x 10 x 220
+fuselagem_1_nariz.stl           1  PETG             127    88 x 103 x 210
+fuselagem_2_meio.stl            1  PETG             102    88 x 100 x 210
+fuselagem_3_cauda.stl           1  PETG             103    80 x 90 x 210
+suporte_cauda.stl               1  PETG              45    121 x 40 x 34
+suporte_gopro.stl               1  PETG               7    40 x 30 x 18
+berco_lidar.stl                 1  PETG               8    40 x 26 x 15
+bandeja_eletronica.stl          1  PETG              29    140 x 70 x 2
+
+Peso estimado das peças impressas: 1150 g
+Envergadura: 2600 mm   Área da asa: 0.559 m²
+Centro de gravidade: 286 mm atrás da parede de fogo (30% da corda)
+Peso estimado em voo (com eletrônica e bateria): 2397 g
+Carga alar: 43 g/dm²
+Para equilibrar: Bateria encostada na frente e ~25 g de lastro no nariz

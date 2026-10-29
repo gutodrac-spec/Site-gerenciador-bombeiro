@@ -1,9 +1,10 @@
 /*
  * MAVLink mínimo — só o que o ESP32 precisa para conversar com o ArduPilot.
  *
- * Envia (MAVLink 1): HEARTBEAT, DISTANCE_SENSOR, REQUEST_DATA_STREAM
- * Lê (MAVLink 1 e 2): HEARTBEAT, SYS_STATUS, GPS_RAW_INT,
- *                     GLOBAL_POSITION_INT, VFR_HUD
+ * Envia (MAVLink 1): HEARTBEAT, DISTANCE_SENSOR, REQUEST_DATA_STREAM,
+ *                    COMMAND_INT, COMMAND_LONG
+ * Lê (MAVLink 1 e 2): HEARTBEAT, SYS_STATUS, GPS_RAW_INT, ATTITUDE,
+ *                     GLOBAL_POSITION_INT, VFR_HUD, COMMAND_ACK
  *
  * Não depende do Arduino, para poder ser testado no computador.
  */
@@ -19,23 +20,38 @@ const uint8_t MEU_COMPID = 158;  // MAV_COMP_ID_PERIPHERAL
 const uint32_t MSG_HEARTBEAT = 0;
 const uint32_t MSG_SYS_STATUS = 1;
 const uint32_t MSG_GPS_RAW_INT = 24;
+const uint32_t MSG_ATTITUDE = 30;
 const uint32_t MSG_GLOBAL_POSITION_INT = 33;
 const uint32_t MSG_REQUEST_DATA_STREAM = 66;
 const uint32_t MSG_VFR_HUD = 74;
+const uint32_t MSG_COMMAND_INT = 75;
+const uint32_t MSG_COMMAND_LONG = 76;
+const uint32_t MSG_COMMAND_ACK = 77;
 const uint32_t MSG_DISTANCE_SENSOR = 132;
 
 // Orientação do sensor de distância (MAV_SENSOR_ORIENTATION)
 const uint8_t ORIENT_FRENTE = 0;
 const uint8_t ORIENT_BAIXO = 25;
 
+// Comandos (MAV_CMD) e modos do ArduPlane usados pela IA
+const uint16_t CMD_DO_SET_MODE = 176;
+const uint16_t CMD_DO_REPOSITION = 192;
+const uint32_t MODO_AUTO = 10;
+const uint32_t MODO_RTL = 11;
+const uint32_t MODO_GUIDED = 15;
+
 inline int crcExtra(uint32_t msgid) {
   switch (msgid) {
     case MSG_HEARTBEAT: return 50;
     case MSG_SYS_STATUS: return 124;
     case MSG_GPS_RAW_INT: return 24;
+    case MSG_ATTITUDE: return 39;
     case MSG_GLOBAL_POSITION_INT: return 104;
     case MSG_REQUEST_DATA_STREAM: return 148;
     case MSG_VFR_HUD: return 20;
+    case MSG_COMMAND_INT: return 158;
+    case MSG_COMMAND_LONG: return 152;
+    case MSG_COMMAND_ACK: return 143;
     case MSG_DISTANCE_SENSOR: return 85;
     default: return -1;
   }
@@ -100,6 +116,35 @@ inline size_t pedirDados(uint8_t *saida, uint16_t hz) {
   return montar(saida, MSG_REQUEST_DATA_STREAM, p, sizeof(p));
 }
 
+// Manda o avião circular sobre um ponto (entra no modo GUIDED).
+// lat/lon em graus * 1e7, altura em metros acima da decolagem, raio em metros.
+inline size_t irPara(uint8_t *saida, int32_t lat, int32_t lon, float altM, float raioM) {
+  uint8_t p[35] = {0};
+  float params[4] = {-1, 1, raioM, 0};  // velocidade padrão, MUDAR_MODO, raio, sentido
+  memcpy(p + 0, params, 16);
+  memcpy(p + 16, &lat, 4);
+  memcpy(p + 20, &lon, 4);
+  memcpy(p + 24, &altM, 4);
+  uint16_t cmd = CMD_DO_REPOSITION;
+  memcpy(p + 28, &cmd, 2);
+  p[30] = 1;  // sistema alvo
+  p[31] = 1;  // piloto automático
+  p[32] = 6;  // MAV_FRAME_GLOBAL_RELATIVE_ALT_INT
+  return montar(saida, MSG_COMMAND_INT, p, sizeof(p));
+}
+
+// Troca o modo de voo (ex: MODO_AUTO para voltar à missão)
+inline size_t mudarModo(uint8_t *saida, uint32_t modo) {
+  uint8_t p[33] = {0};
+  float params[7] = {1, (float)modo, 0, 0, 0, 0, 0};  // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+  memcpy(p + 0, params, 28);
+  uint16_t cmd = CMD_DO_SET_MODE;
+  memcpy(p + 28, &cmd, 2);
+  p[30] = 1;
+  p[31] = 1;
+  return montar(saida, MSG_COMMAND_LONG, p, sizeof(p));
+}
+
 // Dados do avião que interessam para a telemetria
 struct Aviao {
   bool viuHeartbeat = false;
@@ -115,6 +160,9 @@ struct Aviao {
   uint16_t rumoCdeg = 0;
   float velAr = 0, velSolo = 0;
   uint16_t acelerador = 0;
+  float rolagem = 0, arfagem = 0, rumo = 0;  // radianos
+  uint16_t ackComando = 0;
+  uint8_t ackResultado = 255;                // 0 = aceito
   uint32_t ultimaPosicaoMs = 0;
 };
 
@@ -207,6 +255,15 @@ class Leitor {
         a.altRelMm = i32(p + 16);
         a.rumoCdeg = u16(p + 26);
         a.ultimaPosicaoMs = agoraMs;
+        break;
+      case MSG_ATTITUDE:
+        a.rolagem = f32(p + 4);
+        a.arfagem = f32(p + 8);
+        a.rumo = f32(p + 12);
+        break;
+      case MSG_COMMAND_ACK:
+        a.ackComando = u16(p + 0);
+        a.ackResultado = p[2];
         break;
       case MSG_VFR_HUD:
         a.velAr = f32(p + 0);

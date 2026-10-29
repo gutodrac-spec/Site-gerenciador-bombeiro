@@ -6,7 +6,8 @@
  *
  * - Recebe a telemetria do avião pelo rádio LoRa
  * - Cria a rede Wi-Fi "Drone-Bombeiro". Conecte o celular nela e abra
- *   http://192.168.4.1 para ver o painel e comandar a GoPro
+ *   http://192.168.4.1 para ver o painel, os focos de incêndio que a IA
+ *   achar, comandar a GoPro e mandar o avião voltar à missão
  * - Também imprime cada pacote no Monitor Serial (115200)
  */
 
@@ -51,6 +52,7 @@ main{padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150p
 .c{background:#1e1e1e;border-radius:10px;padding:10px}
 .r{font-size:12px;color:#aaa}.v{font-size:22px;font-weight:700;margin-top:4px}
 .alerta{background:#e65100}.ok{color:#66bb6a}.ruim{color:#ef5350}
+.fogo{background:#b71c1c;grid-column:1/-1}.fogo .v{font-size:26px}
 .botoes{padding:0 12px 16px;display:flex;gap:8px}
 button{flex:1;padding:14px;font-size:16px;border:0;border-radius:10px;color:#fff;background:#333}
 #g{background:#c62828}#f{background:#1565c0}
@@ -63,8 +65,14 @@ a{color:#90caf9}
 <button onclick="cmd('P')">■ Parar</button>
 <button id="f" onclick="cmd('F')">📷 Foto</button>
 </div>
+<div class="botoes">
+<button onclick="cmd('M')">↩ Voltar à missão</button>
+<button id="ia" onclick="cmd(iaLigada?'D':'A')">IA</button>
+</div>
 <script>
 const GOPRO=['desconectada','parada','GRAVANDO'];
+const IA=['desligada','vigiando','CIRCULANDO FOCO'];
+let iaLigada=true;
 function card(r,v,cls){return `<div class="c ${cls||''}"><div class="r">${r}</div><div class="v">${v}</div></div>`}
 function mostrar(d){
   const s=document.getElementById('sinal');
@@ -87,6 +95,17 @@ function mostrar(d){
   h+=card('GPS',n(14)+' satélites',n(15)<3?'alerta':'');
   h+=card('GoPro',GOPRO[n(20)]+(n(21)>=0?' · '+n(21)+'%':''),n(20)==2?'ok':'');
   h+=card('Posição',`<a href="https://maps.google.com/?q=${lat},${lon}">${lat.toFixed(5)}, ${lon.toFixed(5)}</a>`);
+  if(x.length>28){
+    iaLigada=n(24)==1;
+    h+=card('IA',IA[n(23)]+(iaLigada?' · pode assumir':' · só avisa'),n(23)==2?'alerta':'');
+    if(n(25)>-999){
+      const fl=n(26)/1e7, fo=n(27)/1e7, ida=n(28);
+      const quando=ida<60?ida+' s':Math.round(ida/60)+' min';
+      h=card('🔥 FOCO DE INCÊNDIO · '+n(25)+' °C · há '+quando,
+        `<a href="https://maps.google.com/?q=${fl},${fo}">${fl.toFixed(5)}, ${fo.toFixed(5)}</a>`,'fogo')+h;
+    }
+    document.getElementById('ia').textContent=iaLigada?'🤖 IA: só avisar':'🤖 IA: pode assumir';
+  }
   document.getElementById('cards').innerHTML=h;
 }
 function atualizar(){fetch('/dados').then(r=>r.json()).then(mostrar).catch(()=>{})}
@@ -106,7 +125,7 @@ void dados() {
 // Manda o comando 3 vezes (o avião pode estar transmitindo); o id evita repetir a ação
 void comando() {
   String c = servidor.arg("c");
-  if (c != "G" && c != "P" && c != "F") {
+  if (c.length() != 1 || String("GPFMAD").indexOf(c) < 0) {
     servidor.send(400, "text/plain", "Comando inválido");
     return;
   }

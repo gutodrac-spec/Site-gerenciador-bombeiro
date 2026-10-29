@@ -1,8 +1,15 @@
 # Guia de montagem — Drone solar dos bombeiros
 
-Avião planador de 2 m, com placas solares na asa, piloto automático
-ArduPilot, LiDAR, GoPro HERO7 Black e telemetria por rádio LoRa até uma
-base em terra.
+Avião planador com placas solares na asa, piloto automático ArduPilot,
+LiDAR, GoPro HERO7 Black, **IA que procura focos de incêndio** com câmera
+térmica e telemetria por rádio LoRa até uma base em terra.
+
+**Dois caminhos para o avião:**
+- **Comprar pronto** em espuma (ex: Volantex Ranger 2000, item 1 da lista).
+  É mais rápido, e o avião já foi testado.
+- **Imprimir em 3D:** um planador de 2,6 m desenhado para este projeto, em
+  [`modelo-3d/`](modelo-3d/README.md). Tem mais área para as células
+  solares, mas é um projeto novo, ainda não voado.
 
 > **Mudança em relação à primeira conversa:** troquei a bateria de 3S para
 > **2S** e o carregador solar de CN3791 para **BQ24650**. O CN3791 só
@@ -84,8 +91,14 @@ porque os anúncios mudam toda hora.
 |---|---|---|---|---|
 | 17 | **LilyGO TTGO LoRa32 V2.1** (T3 v1.6.1), **915 MHz**, com antena. Um vai no avião e outro na base | 2 | R$ 120–180 cada | [ML](https://lista.mercadolivre.com.br/ttgo-lora32-915mhz) · [Ali](https://pt.aliexpress.com/w/wholesale-ttgo-lora32-915.html) |
 | 18 | LiDAR **Benewake TF-Luna** (8 m). Para mais alcance: TFmini-S (12 m) ou TF02-Pro (40 m) | 1 | R$ 150–600 | [ML](https://lista.mercadolivre.com.br/tf-luna-lidar) · [Ali](https://pt.aliexpress.com/w/wholesale-benewake-tf-luna.html) |
+| 18b | Câmera térmica **MLX90640, versão BAA (55°)**, placa com I2C (ex: Adafruit 4407). É o "olho" da IA | 1 | R$ 250–450 | [ML](https://lista.mercadolivre.com.br/mlx90640) · [Ali](https://pt.aliexpress.com/w/wholesale-mlx90640-55.html) |
 | 19 | Power bank (para ligar a base) | 1 | — | você já deve ter |
 | ✔ | ESP32 e GoPro HERO7 Black | — | — | você já tem |
+
+> Na câmera térmica, evite a placa **GY-MCU90640**: ela tem outro
+> processador no meio e fala por serial, não por I2C. Escolha a de
+> **55°**: a de 110° vê uma área maior, mas cada pixel cobre um pedaço
+> maior do chão, e um foco pequeno some.
 
 > O seu ESP32 atual serve para os **testes de bancada**. No avião vale a
 > pena usar o TTGO, que já vem com o rádio LoRa.
@@ -126,8 +139,9 @@ dupla-face, velcro, abraçadeiras e carregador balanceador para Li-ion
 | GPIO **13** (TX) | **RX** do LiDAR (TF-Luna pino 2) | |
 | GPIO **21** (SDA) | INA226 **SDA** | Medidor solar |
 | GPIO **22** (SCL) | INA226 **SCL** | |
-| **3V3** | INA226 **VCC** | |
-| **GND** | GND da controladora, do LiDAR e do INA226 | **Obrigatório** |
+| **3V3** | INA226 **VCC** e MLX90640 **VIN** | |
+| GPIO **21 / 22** | MLX90640 **SDA / SCL** | Mesmo barramento do INA226 |
+| **GND** | GND da controladora, do LiDAR, do INA226 e da MLX90640 | **Obrigatório** |
 
 **Pinos do TF-Luna:** 1 = +5V · 2 = RX · 3 = TX · 4 = GND · 5 = deixar
 **solto** (modo serial) · 6 = não usar. No TFmini-S, pelos fios: vermelho
@@ -212,9 +226,68 @@ Planeje rotas no Mission Planner (modo **AUTO**) e use **LOITER** para
 circular sobre um ponto, como um foco de incêndio. Comece com missões
 curtas, sempre com o rádio na mão para assumir o controle.
 
+### Fase 6 — IA caçadora de focos
+
+Veja a [seção 5](#5-ia-de-bordo--caçadora-de-focos). Faça os testes
+**nesta ordem**.
+
 ---
 
-## 5. Checklist antes de cada voo
+## 5. IA de bordo — caçadora de focos
+
+O ESP32 olha pela câmera térmica (32 × 24 pixels, 2 vezes por segundo)
+enquanto o avião faz a missão de patrulha em **AUTO**:
+
+1. **Vigiando:** procura um ponto bem mais quente que o resto da imagem
+   (padrão: acima de 70 °C e 25 °C acima da média do chão).
+2. **Confirmou** em 3 imagens seguidas: calcula onde o foco está no chão.
+   Para isso usa o GPS, a altura e a inclinação do avião. Manda o alerta
+   para a base: **🔥 FOCO DE INCÊNDIO**, com a temperatura e o link do
+   mapa.
+3. **Circula sobre o foco:** pede ao ArduPilot para dar voltas de 70 m de
+   raio em cima dele, **na mesma altura** (modo GUIDED). A GoPro continua
+   gravando.
+4. **Volta para a missão** depois de 3 minutos, ou quando você aperta
+   **↩ Voltar à missão** na base.
+
+**Quando a IA NÃO assume o controle** (ela só avisa a base):
+- se o avião não estiver em AUTO (por exemplo, você pilotando em FBWA);
+- abaixo de 40 m, ou com a bateria abaixo de 35%;
+- se for o mesmo foco que acabou de circular, ou nos 5 minutos seguintes;
+- se o botão **🤖 IA: só avisar** estiver ligado na base.
+
+**Você sempre manda:** mudou o modo no rádio, a IA solta na hora e não
+insiste. Os failsafes do ArduPilot (bateria, perda de rádio, volta para
+casa) continuam valendo por cima de tudo.
+
+> **Limites honestos:** com 32 × 24 pixels, a 100 m de altura cada pixel
+> vê ~3 × 3 m do chão. Um foco pequeno aparece "misturado" com o chão em
+> volta e pode não passar de 70 °C. Por isso a busca fica mais confiável
+> entre 60 e 100 m. Telhado de metal, asfalto e pedra no sol do meio-dia
+> chegam a 60–70 °C e podem dar **alarme falso**: ajuste `IA_LIMITE_C` e
+> `IA_CONTRASTE_C` no `config.h` depois de ver as temperaturas da sua
+> região. A IA é um **ajudante**: quem decide é sempre o bombeiro.
+
+### Como testar a IA
+
+1. **Bancada:** com o avião desarmado, aponte a câmera térmica para uma
+   caneca de água fervendo, a uns 30 cm. O Monitor Serial deve mostrar
+   `[IA] foco: avião não está em AUTO`, e a base deve mostrar o alerta de
+   foco.
+2. **Direção da imagem:** mova a caneca para a frente do avião e veja se
+   o foco aparece na frente no mapa. Se aparecer invertido, mude
+   `IA_INVERTER_LINHAS` ou `IA_INVERTER_COLUNAS`.
+3. **Voos só avisando:** voe algumas missões com `IA_PODE_CONTROLAR false`
+   e anote os alarmes falsos.
+4. **Simulador (recomendado):** teste os comandos no
+   [simulador SITL do ArduPilot](https://ardupilot.org/dev/docs/sitl-simulator-software-in-the-loop.html)
+   antes de deixar a IA mexer no avião de verdade.
+5. Só então ligue o controle, primeiro com um foco controlado, como uma
+   fogueira autorizada num campo aberto.
+
+---
+
+## 6. Checklist antes de cada voo
 
 - [ ] Bateria carregada (8,4 V) e bem presa
 - [ ] GoPro ligada, com cartão e Wi-Fi ligado
@@ -223,11 +296,12 @@ curtas, sempre com o rádio na mão para assumir o controle.
 - [ ] Modo, LiDAR e bateria aparecendo na base
 - [ ] Superfícies de comando mexendo para o lado certo
 - [ ] Área livre de pessoas, com o vento anotado
+- [ ] IA: "vigiando" na base, e o botão de controle do jeito que você quer
 - [ ] Voo autorizado no SARPAS
 
 ---
 
-## 6. Regras no Brasil
+## 7. Regras no Brasil
 
 - **ANAC:** cadastre o drone no [SISANT](https://sistemas.anac.gov.br/sisant).
   Acima de 250 g é obrigatório. Veja também as
@@ -242,10 +316,11 @@ curtas, sempre com o rádio na mão para assumir o controle.
 
 ---
 
-## 7. Links úteis
+## 8. Links úteis
 
 - ArduPlane, documentação: <https://ardupilot.org/plane/>
 - Mission Planner: <https://ardupilot.org/planner/>
 - Comandos Wi-Fi da GoPro (não oficial): <https://github.com/KonradIT/goprowifihack>
 - LilyGO (TTGO LoRa32): <https://lilygo.cc>
 - Biblioteca LoRa para Arduino: <https://github.com/sandeepmistry/arduino-LoRa>
+- Biblioteca da câmera térmica: <https://github.com/adafruit/Adafruit_MLX90640>

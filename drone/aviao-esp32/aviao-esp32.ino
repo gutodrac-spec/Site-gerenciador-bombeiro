@@ -2,7 +2,7 @@
  * Drone solar dos bombeiros — ESP32 de bordo
  *
  * Placa: LilyGO TTGO LoRa32 V2.1 (ESP32 + rádio LoRa SX1276 915 MHz)
- * Biblioteca: "LoRa" de Sandeep Mistry (Gerenciador de Bibliotecas)
+ * Bibliotecas: "LoRa" de Sandeep Mistry e "Adafruit MLX90640"
  *
  * O que este ESP32 faz (quem pilota é a controladora com ArduPilot):
  *   1. Lê o LiDAR e repassa a distância para o ArduPilot (MAVLink)
@@ -10,9 +10,11 @@
  *   3. Mede a energia que as placas solares estão gerando (INA226)
  *   4. Controla a GoPro HERO7 pelo Wi-Fi: grava sozinha ao armar o motor
  *   5. Manda tudo por rádio LoRa para a base e recebe comandos dela
+ *   6. IA: procura focos de incêndio com a câmera térmica e manda o avião
+ *      circular sobre eles (veja ia_fogo.h)
  *
- * Núcleo 1 (loop): LiDAR, MAVLink e INA226 — nunca pode travar
- * Núcleo 0 (tarefas): GoPro (Wi-Fi) e rádio LoRa, que demoram mais
+ * Núcleo 1 (loop): LiDAR e MAVLink — nunca pode travar
+ * Núcleo 0 (tarefas): GoPro (Wi-Fi), rádio LoRa e sensores I2C com a IA
  *
  * Configuração: arquivo config.h
  */
@@ -25,6 +27,10 @@
 
 #include "config.h"
 #include "mavlink_mini.h"
+#include "ia_fogo.h"
+#if USAR_TERMICA
+#include <Adafruit_MLX90640.h>
+#endif
 
 HardwareSerial SerialFC(1);
 HardwareSerial SerialLidar(2);
@@ -61,6 +67,24 @@ uint32_t ultimoHeartbeatFcMs = 0;
 volatile bool pedidoGravar = false;
 volatile bool pedidoParar = false;
 volatile bool pedidoFoto = false;
+volatile bool pedidoRetomar = false;           // base: voltar à missão
+volatile bool iaControle = IA_PODE_CONTROLAR;  // base pode ligar/desligar
+
+// Pedidos da IA para o loop mandar à controladora (só o loop escreve na serial)
+struct PedidoVoo {
+  bool irPara = false;
+  bool voltarMissao = false;
+  int32_t lat = 0, lon = 0;
+  float altM = 0;
+};
+PedidoVoo pedidoVoo;
+
+// O que a IA está fazendo (para a telemetria)
+struct EstadoIA {
+  ia::Estado estado = ia::DESLIGADA;
+  ia::Foco foco;
+};
+EstadoIA estadoIA;
 bool loraOk = false;  // sem rádio, a telemetria só aparece no Monitor Serial
 
 // =================================================================
@@ -116,6 +140,24 @@ void lerControladora() {
   }
 }
 
+void enviarPedidosDaIA() {
+  PedidoVoo p;
+  portENTER_CRITICAL(&trava);
+  p = pedidoVoo;
+  pedidoVoo.irPara = pedidoVoo.voltarMissao = false;
+  portEXIT_CRITICAL(&trava);
+
+  uint8_t pacote[48];
+  if (p.irPara) {
+    enviarFC(pacote, mav::irPara(pacote, p.lat, p.lon, p.altM, IA_RAIO_M));
+    Serial.printf("[IA] Circulando foco em %.6f, %.6f a %.0f m\n", p.lat / 1e7, p.lon / 1e7, p.altM);
+  }
+  if (p.voltarMissao) {
+    enviarFC(pacote, mav::mudarModo(pacote, mav::MODO_AUTO));
+    Serial.println("[IA] Voltando para a missão (AUTO)");
+  }
+}
+
 void enviarDistancia() {
   Lidar l;
   portENTER_CRITICAL(&trava);
@@ -157,6 +199,92 @@ void lerSolar() {
     solar.ma = (int16_t)shunt * 0.0025 / INA226_SHUNT_OHMS;       // 2,5 µV por bit
   }
   portEXIT_CRITICAL(&trava);
+}
+
+// =================================================================
+//            Sensores I2C + IA de focos de incêndio (núcleo 0)
+// =================================================================
+#if USAR_TERMICA
+Adafruit_MLX90640 termica;
+float quadro[ia::PIXELS];
+#endif
+
+void tarefaSensores(void *) {
+  ia::Piloto piloto;
+  piloto.cfg.limiteC = IA_LIMITE_C;
+  piloto.cfg.contrasteC = IA_CONTRASTE_C;
+  piloto.cfg.altMinM = IA_ALT_MIN_M;
+  piloto.cfg.bateriaMinPct = IA_BATERIA_MIN_PCT;
+  piloto.cfg.raioM = IA_RAIO_M;
+  piloto.cfg.circularMaxMs = IA_CIRCULAR_MAX_S * 1000UL;
+  piloto.cfg.esperaMs = IA_ESPERA_S * 1000UL;
+  piloto.cfg.inverterLinhas = IA_INVERTER_LINHAS;
+  piloto.cfg.inverterColunas = IA_INVERTER_COLUNAS;
+
+#if USAR_TERMICA
+  if (termica.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
+    termica.setMode(MLX90640_CHESS);
+    termica.setResolution(MLX90640_ADC_18BIT);
+    termica.setRefreshRate(MLX90640_2_HZ);
+    piloto.ligar();
+    Serial.println("[IA] Câmera térmica pronta, vigiando");
+  } else {
+    Serial.println("[IA] Câmera térmica não encontrada: IA desligada");
+  }
+#endif
+
+  const char *ultimoMotivo = "";
+  for (;;) {
+    if (USAR_INA226) lerSolar();
+
+    ia::Deteccao det;
+    bool quadroNovo = false;
+#if USAR_TERMICA
+    // Com a câmera a 2 Hz, getFrame espera o quadro ficar pronto (~0,5–1 s)
+    if (piloto.estado != ia::DESLIGADA && termica.getFrame(quadro) == 0) {
+      det = ia::detectar(quadro, piloto.cfg);
+      quadroNovo = true;
+    }
+#endif
+    if (piloto.estado == ia::DESLIGADA) vTaskDelay(pdMS_TO_TICKS(500));
+
+    ia::Situacao s;
+    portENTER_CRITICAL(&trava);
+    s.armado = aviao.armado;
+    s.modo = aviao.modo;
+    s.bateriaPct = aviao.bateriaPct;
+    s.gpsFix = aviao.gpsFix;
+    s.pose.lat = aviao.lat / 1e7;
+    s.pose.lon = aviao.lon / 1e7;
+    s.pose.altM = aviao.altRelMm / 1000.0f;
+    s.pose.rolagem = aviao.rolagem;
+    s.pose.arfagem = aviao.arfagem;
+    s.pose.rumo = aviao.rumo;
+    portEXIT_CRITICAL(&trava);
+
+    piloto.cfg.podeControlar = iaControle;
+    bool retomar = pedidoRetomar;
+    pedidoRetomar = false;
+    ia::Acao acao = piloto.passo(millis(), quadroNovo ? &det : nullptr, s, retomar);
+
+    portENTER_CRITICAL(&trava);
+    if (acao == ia::IR_PARA_FOCO) {
+      pedidoVoo.irPara = true;
+      pedidoVoo.lat = (int32_t)(piloto.foco.lat * 1e7);
+      pedidoVoo.lon = (int32_t)(piloto.foco.lon * 1e7);
+      pedidoVoo.altM = piloto.alvoAltM;
+    }
+    if (acao == ia::VOLTAR_MISSAO) pedidoVoo.voltarMissao = true;
+    estadoIA.estado = piloto.estado;
+    estadoIA.foco = piloto.foco;
+    portEXIT_CRITICAL(&trava);
+
+    if (piloto.motivo() != ultimoMotivo) {
+      ultimoMotivo = piloto.motivo();
+      Serial.printf("[IA] %s\n", ultimoMotivo);
+    }
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }
 
 // =================================================================
@@ -276,14 +404,16 @@ void tarefaGoPro(void *) {
 // Linha de telemetria (CSV), na ordem:
 // BMB,seq,lat,lon,alt_dm,vsolo_dms,var_dms,rumo,armado,modo,fc_ok,
 // bat_mv,bat_ca,bat_pct,sats,fix,solar_mv,solar_ma,lidar_cm,obstaculo,
-// gopro,gopro_bat,gopro_seg
+// gopro,gopro_bat,gopro_seg,ia,ia_controle,foco_temp,foco_lat,foco_lon,foco_idade_s
 void montarTelemetria(char *linha, size_t tam, uint16_t seq) {
   mav::Aviao a;
   Lidar l;
   Solar s;
   GoPro g;
+  EstadoIA e;
   uint32_t hb;
   portENTER_CRITICAL(&trava);
+  e = estadoIA;
   a = aviao;
   l = lidar;
   s = solar;
@@ -296,16 +426,23 @@ void montarTelemetria(char *linha, size_t tam, uint16_t seq) {
   int lidarCm = !lidarOk ? -2 : (l.valido ? l.cm : -1);  // -2 = sem sensor, -1 = sem retorno
   bool obstaculo = !LIDAR_PARA_BAIXO && lidarOk && l.valido && l.cm < OBSTACULO_ALERTA_CM;
 
-  snprintf(linha, tam, "BMB,%u,%ld,%ld,%ld,%d,%d,%u,%d,%s,%d,%u,%d,%d,%u,%u,%u,%d,%d,%d,%d,%d,%d",
+  int focoTemp = e.foco.existe ? (int)e.foco.temp : -999;
+  long focoIdade = e.foco.existe ? (long)((millis() - e.foco.quandoMs) / 1000) : -1;
+
+  snprintf(linha, tam, "BMB,%u,%ld,%ld,%ld,%d,%d,%u,%d,%s,%d,%u,%d,%d,%u,%u,%u,%d,%d,%d,%d,%d,%d,"
+           "%d,%d,%d,%ld,%ld,%ld",
            seq, (long)a.lat, (long)a.lon, (long)(a.altRelMm / 100),
            (int)(a.velSolo * 10), (int)(a.velAr * 10), a.rumoCdeg / 100,
            a.armado, mav::nomeModo(a.modo), fcOk,
            a.bateriaMv, a.correnteCa, a.bateriaPct, a.satelites, a.gpsFix,
            s.ok ? s.mv : 0, s.ok ? s.ma : 0, lidarCm, obstaculo,
-           g.estado, g.bateria, g.segundos);
+           g.estado, g.bateria, g.segundos,
+           e.estado, (int)iaControle, focoTemp,
+           (long)(e.foco.lat * 1e7), (long)(e.foco.lon * 1e7), focoIdade);
 }
 
-// Comandos da base: "CMD,<chave>,<G|P|F>,<id>" — G gravar, P parar, F foto.
+// Comandos da base: "CMD,<chave>,<letra>,<id>"
+//   G gravar | P parar | F foto | M voltar à missão | A IA pode controlar | D IA só avisa
 // A base repete cada comando 3 vezes; o id evita executar de novo.
 void tratarComando(const String &msg) {
   static long ultimoId = -1;
@@ -319,12 +456,15 @@ void tratarComando(const String &msg) {
   if (c == 'G') pedidoGravar = true;
   if (c == 'P') pedidoParar = true;
   if (c == 'F') pedidoFoto = true;
+  if (c == 'M') pedidoRetomar = true;
+  if (c == 'A') iaControle = true;
+  if (c == 'D') iaControle = false;
 }
 
 void tarefaRadio(void *) {
   uint32_t ultimoEnvio = 0;
   uint16_t seq = 0;
-  char linha[200];
+  char linha[240];
 
   for (;;) {
     if (loraOk && LoRa.parsePacket() > 0) {
@@ -358,7 +498,10 @@ void setup() {
   SerialLidar.setRxBufferSize(512);
   SerialLidar.begin(LIDAR_BAUD, SERIAL_8N1, PINO_LIDAR_RX, PINO_LIDAR_TX);
 
-  if (USAR_INA226) Wire.begin(PINO_I2C_SDA, PINO_I2C_SCL);
+  if (USAR_INA226 || USAR_TERMICA) {
+    Wire.begin(PINO_I2C_SDA, PINO_I2C_SCL);
+    Wire.setClock(400000);
+  }
 
   SPI.begin(PINO_LORA_SCK, PINO_LORA_MISO, PINO_LORA_MOSI, PINO_LORA_SS);
   LoRa.setPins(PINO_LORA_SS, PINO_LORA_RST, PINO_LORA_DIO0);
@@ -376,13 +519,15 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   xTaskCreatePinnedToCore(tarefaGoPro, "gopro", 8192, nullptr, 1, nullptr, 0);
+  // pilha grande: a IA copia o quadro térmico (3 KB) para achar a mediana
+  xTaskCreatePinnedToCore(tarefaSensores, "sensores", 12288, nullptr, 1, nullptr, 0);
 
   uint8_t pacote[32];
   enviarFC(pacote, mav::pedirDados(pacote, 4));
 }
 
 void loop() {
-  static uint32_t tDistancia = 0, tHeartbeat = 0, tPedido = 0, tSolar = 0;
+  static uint32_t tDistancia = 0, tHeartbeat = 0, tPedido = 0;
   uint32_t agora = millis();
 
   lerControladora();
@@ -405,10 +550,7 @@ void loop() {
     if (agora - aviaoLocal.ultimaPosicaoMs > 5000) enviarFC(pacote, mav::pedirDados(pacote, 4));
   }
 
-  if (USAR_INA226 && agora - tSolar >= 500) {
-    tSolar = agora;
-    lerSolar();
-  }
+  enviarPedidosDaIA();
 
   delay(1);
 }
