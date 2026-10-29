@@ -2,10 +2,10 @@
 
 Tudo o que falta comprar para o **Planador Solar 193 impresso em 3D**, com a
 IA caçadora de focos e a estação base. Já tirei o que você tem: ESP32,
-GoPro HERO7 Black e o LiDAR.
+GoPro HERO7 Black, LiDAR, impressora 3D e multímetro.
 
-**Total estimado: R$ 3.920 a R$ 7.270**
-(mais R$ 2.070 a R$ 4.590 em ferramentas e itens opcionais, se precisar).
+**Total estimado: R$ 4.040 a R$ 7.540**
+(mais R$ 140 a R$ 270 em itens opcionais, se ainda não tiver: microSD, power bank e ferramentas de mão).
 
 > Os preços são aproximados, para planejar. Os links abrem a **busca** no
 > Mercado Livre (ML) e no AliExpress (Ali), porque os anúncios mudam toda
@@ -13,9 +13,9 @@ GoPro HERO7 Black e o LiDAR.
 > semanas e pode ter imposto de importação.
 
 **Ordem sugerida de compra:**
-1. Bancada, para já ir testando: os 2 TTGO, a câmera térmica, o INA226 e
-   os cabos.
-2. Impressão: LW-PLA e PETG. Imprima um segmento da asa e pese antes de
+1. Bancada, para já ir testando: os 2 TTGO, a câmera térmica, o INA226,
+   os cabos, e também o ferro de solda e o estanho.
+2. Impressão: LW-PLA, PETG, Super Bonder e cola quente. Imprima um segmento da asa e pese antes de
    imprimir o resto.
 3. Voo: controladora, GPS, rádio, motor, ESC, servos e tubos de carbono.
 4. Energia: células Li-ion, BMS e carregador.
@@ -46,8 +46,8 @@ GoPro HERO7 Black e o LiDAR.
 | ☐ | **Fita de solda para célula solar + caneta de fluxo**<br>Para ligar as células em série | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/fita-solda-celula-solar) · [Ali](https://pt.aliexpress.com/w/wholesale-solar-cell-tabbing-wire.html) |
 | ☐ | **Filme de laminação transparente**<br>Protege as células na asa | 1 | R$ 30–R$ 80 | R$ 30–R$ 80 | [ML](https://lista.mercadolivre.com.br/filme-laminacao-aeromodelo) · [Ali](https://pt.aliexpress.com/w/wholesale-laminating-film-rc-plane.html) |
 | ☐ | **Carregador solar MPPT BQ24650**<br>Ajuste a saída em 8,4 V antes de ligar na bateria | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/bq24650) · [Ali](https://pt.aliexpress.com/w/wholesale-bq24650-mppt.html) |
-| ☐ | **Célula Li-ion 21700 Molicel P42A**<br>Ou Samsung 40T. Formam a bateria 2S3P | 6 | R$ 40–R$ 60 | R$ 240–R$ 360 | [ML](https://lista.mercadolivre.com.br/molicel-p42a) · [Ali](https://pt.aliexpress.com/w/wholesale-molicel-p42a.html) |
-| ☐ | **BMS 2S 20 A balanceado + fita de níquel**<br>Ou peça o pack 2S3P já soldado | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/bms-2s-20a-balanceado) · [Ali](https://pt.aliexpress.com/w/wholesale-bms-2s-20a-balance.html) |
+| ☐ | **Célula Li-ion 21700 Molicel P42A**<br>Ou Samsung 40T. Não solde direto nas células com ferro, porque o calor estraga. Peça para uma loja de baterias montar o pack 2S3P com solda ponto | 6 | R$ 40–R$ 60 | R$ 240–R$ 360 | [ML](https://lista.mercadolivre.com.br/molicel-p42a) · [Ali](https://pt.aliexpress.com/w/wholesale-molicel-p42a.html) |
+| ☐ | **BMS 2S 20 A balanceado**<br>A loja que montar o pack pode colocar junto | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/bms-2s-20a-balanceado) · [Ali](https://pt.aliexpress.com/w/wholesale-bms-2s-20a-balance.html) |
 | ☐ | **Medidor INA226 + resistor shunt 0,01 Ω (R010)**<br>Troque o shunt de 0,1 Ω que vem no módulo | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/ina226) · [Ali](https://pt.aliexpress.com/w/wholesale-ina226-module.html) |
 | ☐ | **BEC 5 V 3 A + cabo USB-C curto**<br>Alimenta a GoPro pela bateria do avião | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/ubec-5v-3a) · [Ali](https://pt.aliexpress.com/w/wholesale-ubec-5v-3a.html) |
 | ☐ | **Conectores XT60, fio de silicone 16 e 22 AWG, termo-retrátil** | 1 | R$ 50–R$ 80 | R$ 50–R$ 80 | [ML](https://lista.mercadolivre.com.br/kit-xt60-fio-silicone) · [Ali](https://pt.aliexpress.com/w/wholesale-xt60-silicone-wire-kit.html) |
@@ -82,20 +82,22 @@ GoPro HERO7 Black e o LiDAR.
 | ☐ | **Elásticos grossos de látex**<br>Prendem a asa e soltam num choque | 1 | R$ 10–R$ 20 | R$ 10–R$ 20 | [ML](https://lista.mercadolivre.com.br/elastico-latex-aeromodelo) |
 | ☐ | **Fita para dobradiça**<br>Ex: Blenderm, ou fita transparente reforçada | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/fita-blenderm) |
 | ☐ | **Chifres de comando e garfinhos (clevis)** | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/kit-horn-clevis-aeromodelo) · [Ali](https://pt.aliexpress.com/w/wholesale-rc-control-horn-clevis-kit.html) |
-| ☐ | **Cola instantânea (CA) + ativador**<br>Para colar as peças | 1 | R$ 40–R$ 80 | R$ 40–R$ 80 | [ML](https://lista.mercadolivre.com.br/cola-ca-ativador-aeromodelo) |
+| ☐ | **Super Bonder (cola instantânea) + ativador**<br>Uns 4 tubos de 3 g ou um frasco de 20 g. É a cola principal das peças impressas | 1 | R$ 40–R$ 80 | R$ 40–R$ 80 | [ML](https://lista.mercadolivre.com.br/super-bonder-20g) |
+| ☐ | **Pistola de cola quente pequena + bastões finos**<br>Só para prender fios e eletrônica na fuselagem. Não use na asa: o LW-PLA amolece com o calor | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/pistola-cola-quente-pequena) |
 | ☐ | **Epóxi 5 minutos**<br>Para as longarinas e o tubo da cauda | 1 | R$ 25–R$ 50 | R$ 25–R$ 50 | [ML](https://lista.mercadolivre.com.br/epoxi-5-minutos) |
 | ☐ | **Parafusos M3 × 6 e M2 sortidos**<br>Motor e suportes | 1 | R$ 15–R$ 30 | R$ 15–R$ 30 | [ML](https://lista.mercadolivre.com.br/kit-parafuso-m3-m2) |
 | ☐ | **Velcro, abraçadeiras e fita dupla-face**<br>Para prender a eletrônica | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/fita-velcro-dupla-face) |
 | ☐ | **Chumbo de pesca (~25 g)**<br>Lastro no nariz para equilibrar | 1 | R$ 5–R$ 15 | R$ 5–R$ 15 | [ML](https://lista.mercadolivre.com.br/chumbada-pesca) |
 
-## Ferramentas, se ainda não tiver
+## Ferramentas
 
 | ✔ | Item | Qtd | Preço un. | Subtotal | Onde buscar |
 |---|---|---|---|---|---|
-| ☐ | **Ferro de solda de 60 W ou mais + estanho** *(opcional)* | 1 | R$ 80–R$ 200 | R$ 80–R$ 200 | [ML](https://lista.mercadolivre.com.br/ferro-de-solda-60w) |
-| ☐ | **Multímetro** *(opcional)* | 1 | R$ 40–R$ 100 | R$ 40–R$ 100 | [ML](https://lista.mercadolivre.com.br/multimetro-digital) |
-| ☐ | **Estilete, lixa, alicate e cola quente** *(opcional)* | 1 | R$ 50–R$ 100 | R$ 50–R$ 100 | [ML](https://lista.mercadolivre.com.br/kit-estilete-alicate) |
-| ☐ | **Impressora 3D com mesa de 220 × 220 mm e 240 mm de altura** *(opcional)*<br>Ex: Bambu Lab A1 ou Ender-3 V3. Ou use um serviço de impressão | 1 | R$ 1.800–R$ 4.000 | R$ 1.800–R$ 4.000 | [ML](https://lista.mercadolivre.com.br/impressora-3d-bambu-lab-a1) |
+| ☐ | **Ferro de solda de 60 W com temperatura ajustável**<br>Precisa de ponta grossa para os conectores XT60. O Pinecil ou TS101 (USB-C, R$ 250–400) é melhor, mas o simples resolve | 1 | R$ 60–R$ 150 | R$ 60–R$ 150 | [ML](https://lista.mercadolivre.com.br/ferro-de-solda-60w-ajustavel) |
+| ☐ | **Estanho 0,8 mm com fluxo + pasta de solda** | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/estanho-0-8mm-fluxo) |
+| ☐ | **Estilete, lixa e alicate** *(opcional)*<br>Se ainda não tiver | 1 | R$ 40–R$ 80 | R$ 40–R$ 80 | [ML](https://lista.mercadolivre.com.br/kit-estilete-alicate) |
+| ✅ | **Multímetro** — Serve para ajustar o carregador solar em 8,4 V | 1 | — | já tem | |
+| ✅ | **Impressora 3D** — Mesa de 220 × 220 mm e pelo menos 240 mm de altura | 1 | — | já tem | |
 
 ---
 
