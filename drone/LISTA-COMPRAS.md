@@ -2,10 +2,11 @@
 
 Tudo o que falta comprar para o **Planador Solar 193 impresso em 3D**, com a
 IA caçadora de focos e a estação base. Já tirei o que você tem: ESP32,
-GoPro HERO7 Black, LiDAR, impressora 3D e multímetro.
+GoPro HERO7 Black, LiDAR, impressora 3D, multímetro, ferro de solda,
+estanho, Super Bonder, cola quente e ferramentas de mão.
 
-**Total estimado: R$ 4.040 a R$ 7.540**
-(mais R$ 140 a R$ 270 em itens opcionais, se ainda não tiver: microSD, power bank e ferramentas de mão).
+**Total estimado: R$ 3.880 a R$ 7.190**
+(mais R$ 100 a R$ 190 em itens opcionais, se ainda não tiver: cartão microSD e power bank).
 
 > Os preços são aproximados, para planejar. Os links abrem a **busca** no
 > Mercado Livre (ML) e no AliExpress (Ali), porque os anúncios mudam toda
@@ -13,9 +14,9 @@ GoPro HERO7 Black, LiDAR, impressora 3D e multímetro.
 > semanas e pode ter imposto de importação.
 
 **Ordem sugerida de compra:**
-1. Bancada, para já ir testando: os 2 TTGO, a câmera térmica, o INA226,
-   os cabos, e também o ferro de solda e o estanho.
-2. Impressão: LW-PLA, PETG, Super Bonder e cola quente. Imprima um segmento da asa e pese antes de
+1. Bancada, para já ir testando: os 2 TTGO, a câmera térmica, o INA226 e
+   os cabos.
+2. Impressão: LW-PLA e PETG. Imprima um segmento da asa e pese antes de
    imprimir o resto.
 3. Voo: controladora, GPS, rádio, motor, ESC, servos e tubos de carbono.
 4. Energia: células Li-ion, BMS e carregador.
@@ -82,8 +83,8 @@ GoPro HERO7 Black, LiDAR, impressora 3D e multímetro.
 | ☐ | **Elásticos grossos de látex**<br>Prendem a asa e soltam num choque | 1 | R$ 10–R$ 20 | R$ 10–R$ 20 | [ML](https://lista.mercadolivre.com.br/elastico-latex-aeromodelo) |
 | ☐ | **Fita para dobradiça**<br>Ex: Blenderm, ou fita transparente reforçada | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/fita-blenderm) |
 | ☐ | **Chifres de comando e garfinhos (clevis)** | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/kit-horn-clevis-aeromodelo) · [Ali](https://pt.aliexpress.com/w/wholesale-rc-control-horn-clevis-kit.html) |
-| ☐ | **Super Bonder (cola instantânea) + ativador**<br>Uns 4 tubos de 3 g ou um frasco de 20 g. É a cola principal das peças impressas | 1 | R$ 40–R$ 80 | R$ 40–R$ 80 | [ML](https://lista.mercadolivre.com.br/super-bonder-20g) |
-| ☐ | **Pistola de cola quente pequena + bastões finos**<br>Só para prender fios e eletrônica na fuselagem. Não use na asa: o LW-PLA amolece com o calor | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/pistola-cola-quente-pequena) |
+| ✅ | **Super Bonder (cola instantânea) + ativador** — Confira se tem bastante: o avião usa uns 20 g (4 tubos de 3 g) | 1 | — | já tem | |
+| ✅ | **Pistola de cola quente pequena + bastões finos** — Só para fios e eletrônica na fuselagem. Não use na asa: o LW-PLA amolece com o calor | 1 | — | já tem | |
 | ☐ | **Epóxi 5 minutos**<br>Para as longarinas e o tubo da cauda | 1 | R$ 25–R$ 50 | R$ 25–R$ 50 | [ML](https://lista.mercadolivre.com.br/epoxi-5-minutos) |
 | ☐ | **Parafusos M3 × 6 e M2 sortidos**<br>Motor e suportes | 1 | R$ 15–R$ 30 | R$ 15–R$ 30 | [ML](https://lista.mercadolivre.com.br/kit-parafuso-m3-m2) |
 | ☐ | **Velcro, abraçadeiras e fita dupla-face**<br>Para prender a eletrônica | 1 | R$ 20–R$ 40 | R$ 20–R$ 40 | [ML](https://lista.mercadolivre.com.br/fita-velcro-dupla-face) |
@@ -93,9 +94,9 @@ GoPro HERO7 Black, LiDAR, impressora 3D e multímetro.
 
 | ✔ | Item | Qtd | Preço un. | Subtotal | Onde buscar |
 |---|---|---|---|---|---|
-| ☐ | **Ferro de solda de 60 W com temperatura ajustável**<br>Precisa de ponta grossa para os conectores XT60. O Pinecil ou TS101 (USB-C, R$ 250–400) é melhor, mas o simples resolve | 1 | R$ 60–R$ 150 | R$ 60–R$ 150 | [ML](https://lista.mercadolivre.com.br/ferro-de-solda-60w-ajustavel) |
-| ☐ | **Estanho 0,8 mm com fluxo + pasta de solda** | 1 | R$ 30–R$ 60 | R$ 30–R$ 60 | [ML](https://lista.mercadolivre.com.br/estanho-0-8mm-fluxo) |
-| ☐ | **Estilete, lixa e alicate** *(opcional)*<br>Se ainda não tiver | 1 | R$ 40–R$ 80 | R$ 40–R$ 80 | [ML](https://lista.mercadolivre.com.br/kit-estilete-alicate) |
+| ✅ | **Ferro de solda de 60 W com temperatura ajustável** — Precisa ter 60 W ou mais e ponta grossa para os conectores XT60 | 1 | — | já tem | |
+| ✅ | **Estanho 0,8 mm com fluxo + pasta de solda** — você já tem | 1 | — | já tem | |
+| ✅ | **Estilete, lixa e alicate** — você já tem | 1 | — | já tem | |
 | ✅ | **Multímetro** — Serve para ajustar o carregador solar em 8,4 V | 1 | — | já tem | |
 | ✅ | **Impressora 3D** — Mesa de 220 × 220 mm e pelo menos 240 mm de altura | 1 | — | já tem | |
 
